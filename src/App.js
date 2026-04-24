@@ -3,130 +3,70 @@ import "./App.css";
 
 function App() {
   const [formData, setFormData] = useState({
-    pregnancies: "",
     glucose: "",
-    blood_pressure: "",
-    skin_thickness: "",
-    insulin: "",
     bmi: "",
-    diabetes_pedigree_function: "",
     age: "",
-    glucose_postprandial: "",
-    hba1c: "",
-    insulin_level: "",
-    diabetes_risk_score: "",
-    waist_to_hip_ratio: "",
-    heart_rate: "",
-    triglycerides: "",
-    diet_score: "",
-    cardiovascular_history: "",
-    alcohol_consumption_per_week: "",
-    physical_activity_minutes_per_week: "",
-    screen_time: "",
+    insulin: "",
   });
 
-  const [result, setResult] = useState("");
+  const [result, setResult] = useState(null);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const predict = () => {
+    const glucose = parseFloat(formData.glucose);
+    const bmi = parseFloat(formData.bmi);
+    const age = parseFloat(formData.age);
+    const insulin = parseFloat(formData.insulin);
+
+    // SIMPLE LOGIC (you can tweak later)
+    let riskScore =
+      (glucose / 200) * 0.4 +
+      (bmi / 50) * 0.3 +
+      (age / 100) * 0.2 +
+      (insulin / 300) * 0.1;
+
+    riskScore = Math.min(1, riskScore);
+
+    const prediction = riskScore > 0.5 ? "Diabetic" : "Not Diabetic";
+    const confidence = (riskScore * 100).toFixed(2);
+
+    setResult({
+      prediction,
+      riskScore: riskScore.toFixed(2),
+      confidence,
     });
   };
 
-  const handleSubmit = async () => {
-    try {
-      const response = await fetch(
-        "https://diabetes-ml-api-production-156e.up.railway.app/predict",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(
-            Object.fromEntries(
-              Object.entries(formData).map(([k, v]) => [k, parseFloat(v)])
-            )
-          ),
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.prediction !== undefined) {
-        setResult("Prediction: " + data.prediction);
-      } else {
-        setResult("Error: " + JSON.stringify(data));
-      }
-    } catch (error) {
-      console.error(error);
-      setResult("Error connecting to backend");
-    }
-  };
-
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background:
-          "linear-gradient(135deg, #5f5fc4, #8f6ed5, #c77dd8)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <div
-        style={{
-          background: "rgba(255,255,255,0.15)",
-          backdropFilter: "blur(15px)",
-          padding: "30px",
-          borderRadius: "20px",
-          width: "400px",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-        }}
-      >
-        <h1 style={{ textAlign: "center", color: "#fff" }}>
-          Diabetes Predictor
-        </h1>
+    <div className="container">
+      <h1>🧠 Diabetes Predictor</h1>
 
-        {Object.keys(formData).map((key) => (
-          <input
-            key={key}
-            name={key}
-            placeholder={key}
-            value={formData[key]}
-            onChange={handleChange}
-            style={{
-              width: "100%",
-              margin: "8px 0",
-              padding: "10px",
-              borderRadius: "10px",
-              border: "none",
-            }}
-          />
-        ))}
+      <input
+        name="glucose"
+        placeholder="Glucose"
+        onChange={handleChange}
+      />
+      <input name="bmi" placeholder="BMI" onChange={handleChange} />
+      <input name="age" placeholder="Age" onChange={handleChange} />
+      <input
+        name="insulin"
+        placeholder="Insulin Level"
+        onChange={handleChange}
+      />
 
-        <button
-          onClick={handleSubmit}
-          style={{
-            width: "100%",
-            padding: "12px",
-            marginTop: "10px",
-            borderRadius: "10px",
-            border: "none",
-            background: "#ff4b5c",
-            color: "#fff",
-            fontWeight: "bold",
-            cursor: "pointer",
-          }}
-        >
-          🚀 Predict
-        </button>
+      <button onClick={predict}>🚀 Predict</button>
 
-        <p style={{ marginTop: "15px", color: "#fff", textAlign: "center" }}>
-          {result}
-        </p>
-      </div>
+      {result && (
+        <div className="result">
+          <h2>Result</h2>
+          <p>Prediction: {result.prediction}</p>
+          <p>Risk Score: {result.riskScore}</p>
+          <p>Confidence: {result.confidence}%</p>
+        </div>
+      )}
     </div>
   );
 }
